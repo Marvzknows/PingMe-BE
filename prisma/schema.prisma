@@ -13,41 +13,11 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
+  id        String   @id // Keycloak `sub` claim (UUID)
   email     String   @unique
-  username  String   @unique
-  // Hashed password. Hashing is performed by the application before insert.
-  password  String
+  username  String?
+  firstName String?
+  lastName  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  refreshTokens RefreshToken[]
-}
-
-model RefreshToken {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // SHA-256 hex of the signed refresh JWT. We store the hash (not the JWT
-  // itself) so a database leak alone cannot be turned into usable refresh
-  // tokens. Verification: hash the cookie and compare.
-  tokenHash String @unique
-
-  // Absolute expiry. Always checked alongside the JWT's exp claim — DB takes
-  // precedence so admins can force-expire a token without rotating secrets.
-  expiresAt DateTime
-
-  // When set, the token has been rotated or logged out. A signature-valid
-  // refresh JWT whose row has revokedAt != null means the token is being
-  // replayed → trigger full-family revocation (theft mitigation).
-  revokedAt DateTime?
-
-  // Forensics: id of the token that replaced this one during rotation.
-  replacedBy String?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([expiresAt])
 }
